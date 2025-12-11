@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Training Calendar</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet">
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css"
+            rel="stylesheet">
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.46/moment-timezone-with-data.min.js">
+    </script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.umd.js"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css"
+            rel="stylesheet">
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+        <script
+            src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+        <link rel="stylesheet" href="styles/style.css">
+        <script src="js/script.js"></script>
+    </head>
+
+    <body>
+        <div id="loadingScreen" style="
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:#121212;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:20px;
+    z-index:9999;
+
+   
+">
+            Checking authentication…
+        </div>
+
+        <div class="portal-container" id="portal-container">
+            <div class="controls">
+                <button type="button" id="toggle" class="toggle-btn"
+                    aria-controls="sidebar"
+                    aria-expanded="false" title="Toggle table ">
+
+                    <i class="fas fa-bars fa-2x"></i>
+                </button>
+                <select id="controlviewMode">
+                    <option value="Day">Day</option>
+                    <option value="Week">Week</option>
+                    <option value="Month">Month</option>
+                </select>
+                <select name="controlStatus[]" id="controlStatus"
+                    class="selectpicker" multiple data-live-search="true"
+                    data-width="300px" title="Status">
+                    <option value="Not Started">Not Started</option>
+                    <option value="Proposed">Proposed</option>
+                    <option value="Completed">Completed</option>
+                    <option value="In Progress">In Progress</option>
+                    <!--<option value="Archived">Archived</option>-->
+                </select>
+                <select class="selectpicker"
+                    name="controlFacilitator[]"
+                    id="controlFacilitator" multiple data-live-search="true"
+                    data-width="300px" title="Facilitator">
+
+                </select>
+
+                <input type="text" id="daterange" class="form-control"
+                    style="width:300px" />
+
+                <button type="button" id="reset" class="reset-btn"
+                    aria-controls="sidebar"
+                    aria-expanded="false" title="Reset filters">
+
+                    <i class="fas fa-sync fa-2x"></i>
+                </button>
+
+                <button id="addTask" data-bs-toggle="modal"
+                    data-bs-target="#newClassModal">+ Add Class</button>
+            </div>
+            <div style="display: flex;overflow: auto;">
+                <div class="task-table active">
+                    <div class="table-header">
+                        <div class="table-head"
+                            id="tp_className">Class Name <span id="tp_className_forChev"></i></span></div>
+                        <div class="table-head"
+                            id="vd_firstname">Facilitator <span id="vd_firstname_forChev"></i></span></div>
+                        <div class="table-head"
+                            id="tp_type">Type <span id="tp_type_forChev"></i></span></div>
+                        <div class="table-head"
+                            id="tp_status">Status <span id="tp_status_forChev"></i></span></div>
+                        <div class="table-head"
+                            id="tp_startDateFormatted">Start <span id="tp_startDateFormatted_forChev"></i></span></div>
+                    </div>
+                    <div class="table-body" id="taskTableBody"></div>
+                </div>
+                <div class="gantt-section" id="ganttSection">
+
+                    <!-- Gantt Chart -->
+                    <div id="gantt-target" class="gantt-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="newClassModal" data-bs-backdrop="static"
+            data-bs-keyboard="false" tabindex="-1"
+            aria-labelledby="newClassModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="newClassModalLabel">Add
+                            New Class</h1>
+                        <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="newClass" autocomplete="off">
+                            <div class="form-group">
+                                <label for="className">Class Name</label>
+                                <input type="text" class="form-control"
+                                    name="className" id="className" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Brand</label>
+                                <select class="form-control" name="classBrand"
+                                    id="classBrand" required>
+                                    <option value>-- Select Brand --</option>
+                                    <option value="Dodo">Dodo</option>
+                                    <option value="IPrimus">IPrimus</option>
+                                    <option value="Energy">Energy</option>
+                                    <option value="Credit Solutions">Credit
+                                        Solutions</option>
+                                    <option value="Vocus">Vocus</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Type</label>
+                                <select class="form-control" name="classType"
+                                    id="classType" required>
+                                    <option value>-- Select Type --</option>
+                                    <option value="Module">Module</option>
+                                    <option value="Face to Face">Face to
+                                        Face</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="classStart">Start Date</label>
+                                <input type="date" class="form-control"
+                                    name="classStart" id="classStart" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="classEnd">End Date</label>
+                                <input type="date" class="form-control"
+                                    name="classEnd" id="classEnd" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="classStatus">Status</label>
+                                <select class="form-control" name="classStatus"
+                                    id="classStatus" required>
+                                    <option value="Not Started">Not
+                                        Started</option>
+                                    <option value="Proposed">Proposed</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="In Progress">In
+                                        Progress</option>
+                                    <!--<option value="Archived">Archived</option>-->
+                                </select>
+                            </div>
+                            <div class="form-group div-new-facilitator">
+                                <label
+                                    for="classFacilitator">Facilitator</label>
+                                <select class="form-control"
+                                    name="classFacilitator"
+                                    id="classFacilitator" required>
+                                    <option value>-- Select Facilitator
+                                        --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="classNotes">Notes</label>
+                                <textarea class="form-control" name="classNotes"
+                                    id="classNotes"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary"
+                                id="saveTask">Save</button>
+                            <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="task-panel">
+            <div class="task-header">
+                <div class="header-left">
+                    <button class="close-btn" id="closePanel">&times;</button>
+                </div>
+                <h3 id="class-name"></h3>
+                <div class="header-right">
+                    <button class="edit-btn" id="editBtn">Edit</button>
+                </div>
+            </div>
+            <!-- View Mode -->
+            <div class="task-details" id="viewMode">
+                <p id="status"></p>
+                <p id="task-trainer"></p>
+                <p id="task-brand"></p>
+                <p id="task-type"></p>
+                <p id="start-date"></p>
+                <p id="end-date"></p>
+                <p><strong>Notes</strong></p>
+                <div class="notes">
+                    <p id="notes"></p>
+                </div>
+                <button class="delete-btn" id="delete-btn"
+                    data-delete-class-id="0">Delete task</button>
+            </div>
+            <!-- Edit Mode -->
+            <div class="task-details" id="editMode" style="display: none">
+                <form id="editClass" autocomplete="off">
+                    <input type="hidden" name="edit-ClassId" id="edit-ClassId">
+                    <div class="form-group">
+                        <label for="edit-ClassName">Class</label>
+                        <input type="text" id="edit-ClassName"
+                            name="edit-ClassName" />
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-control" name="edit-status"
+                            id="edit-status">
+                            <option value="Not Started">Not Started</option>
+                            <option value="Proposed">Proposed</option>
+                            <option value="Completed">Completed</option>
+                            <option value="In Progress">In Progress</option>
+                            <!--<option value="Archived">Archived</option>-->
+                        </select>
+                    </div>
+                    <div class="form-group div-edit-facilitator">
+                        <label>Trainer</label>
+                        <select class="form-control" name="classFacilitator"
+                            id="edit-classFacilitator">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <select class="form-control" name="edit-brand"
+                            id="edit-brand">
+                            <option value="Dodo">Dodo</option>
+                            <option value="IPrimus">IPrimus</option>
+                            <option value="Energy">Energy</option>
+                            <option value="Credit Solutions">Credit
+                                Solutions</option>
+                            <option value="Vocus">Vocus</option>
+                        </select>
+                    </div>
+                    <div class="form-group ">
+                        <label>Type</label>
+                        <select class="form-control" name="edit-type"
+                            id="edit-type">
+                            <option value="Module">Module</option>
+                            <option value="Face to Face">Face to Face</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Start date</label>
+                        <input type="date" id="edit-start-date"
+                            name="edit-start-date" value />
+                    </div>
+                    <div class="form-group">
+                        <label>End date</label>
+                        <input type="date" id="edit-end-date"
+                            name="edit-end-date" value />
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="edit-notes" name="edit-notes"></textarea>
+                    </div>
+                    <button type="submit" class="update-btn" id="update-btn"
+                        style="display: none">
+                        Update
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div id="flash-container"></div>
+    </body>
+</html>
